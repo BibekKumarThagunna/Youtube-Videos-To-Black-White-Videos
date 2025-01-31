@@ -15,7 +15,7 @@ def get_resolutions(info):
         if f.get('vcodec') != 'none':
             if f.get('height'):
                 resolutions.add(f['height'])
-            elif f.get('quality_label'):  # For some live streams
+            elif f.get('quality_label'):
                 resolutions.add(int(f['quality_label'].split('p')[0]))
     return sorted(resolutions, reverse=True)
 
@@ -48,25 +48,28 @@ def main():
                 temp_id = uuid.uuid4()
                 download_path = os.path.join("temp", f"temp_{temp_id}.mp4")
 
-                # Format selection for video+audio or video-only + audio
                 ydl_opts = {
                     'format': f'bestvideo[height={selected_res}]+bestaudio/best[height={selected_res}]',
                     'outtmpl': os.path.join("temp", f"temp_{temp_id}"),
                     'merge_output_format': 'mp4',
                     'quiet': True,
                     'no_warnings': True,
+                    'cookiefile': 'cookies.txt',
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                    },
+                    'force_ipv4': True,
                 }
 
                 with st.spinner("Downloading and processing video..."):
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         ydl.download([url])
 
-                    # If separate streams were downloaded, merge them
                     temp_video = os.path.join("temp", f"temp_{temp_id}.f*")
                     if not os.path.exists(download_path):
                         os.rename(temp_video, download_path)
 
-                # Process video
                 with st.spinner("Converting to black and white..."):
                     video = VideoFileClip(download_path)
                     bw_video = video.fx(vfx.blackwhite)
